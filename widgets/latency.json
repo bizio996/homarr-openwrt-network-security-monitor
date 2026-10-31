@@ -1,0 +1,66 @@
+{
+  "$schema": "homarr-custom-widget-v2",
+  "name": "OpenWrt Internet Latency Charts",
+  "description": "Live internet latency and 1h / 24h / 7d charts, measured from TrueNAS",
+  "sources": {
+    "default": {
+      "type": "http",
+      "baseUrl": "http://192.0.2.10:8788",
+      "networkScope": "private",
+      "auth": "bearer"
+    }
+  },
+  "requests": {
+    "snapshot": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/latency",
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 60
+    },
+    "h1": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/latency/chart",
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 60,
+      "query": {
+        "hours": 1
+      }
+    },
+    "h24": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/latency/chart",
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 60,
+      "query": {
+        "hours": 24
+      }
+    },
+    "d7": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/latency/chart",
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 60,
+      "query": {
+        "hours": 168
+      }
+    }
+  },
+  "options": {},
+  "template": "<Stack gap=\"sm\">\n  <Group justify=\"space-between\"><Text fw={700}>Internet Latency</Text><RefreshButton size=\"xs\" /></Group>\n  {status.snapshot?.ok === false ? <Alert color=\"red\">Latency collector unavailable</Alert> : !data.snapshot ? <Text size=\"sm\">Waiting for latency data...</Text> : <Stack gap=\"xs\">\n    <Text size=\"xs\" c=\"dimmed\">Measured from TrueNAS collector, not directly from OpenWrt</Text>\n    <SimpleGrid cols={2} spacing=\"xs\">{(data.snapshot.targets ?? []).map((t) => <Paper key={t.target} p=\"xs\" withBorder><Text size=\"xs\" c=\"dimmed\">{t.target}</Text><Text fw={700} size=\"lg\">{t.lastMs ?? \"N/A\"} ms</Text><Text size=\"xs\" c=\"dimmed\">Avg {t.avgMs ?? \"N/A\"} ms · Loss {t.lossPct ?? \"N/A\"}%</Text></Paper>)}</SimpleGrid>\n    <SegmentedControl bind=\"range\" defaultValue=\"1h\" size=\"xs\" data={[{label:\"1 hour\",value:\"1h\"},{label:\"24 hours\",value:\"24h\"},{label:\"7 days\",value:\"7d\"}]} />\n    {((inputs.range ?? \"1h\") === \"1h\" ? data.h1 : (inputs.range === \"24h\" ? data.h24 : data.d7))?.points?.length > 0 ?\n      <LineChart h={220} data={((inputs.range ?? \"1h\") === \"1h\" ? data.h1 : (inputs.range === \"24h\" ? data.h24 : data.d7)).points} dataKey=\"time\" series={[{name:\"ping1\",color:\"blue.6\",label:\"1.1.1.1\"},{name:\"ping2\",color:\"green.6\",label:\"8.8.8.8\"}]} curveType=\"linear\" connectNulls={false} withLegend withTooltip yAxisProps={{domain:[0,\"auto\"]}} /> : <Alert color=\"gray\">No latency history in this interval yet.</Alert>}\n    <Text size=\"xs\" c=\"dimmed\">Successful pings averaged per minute (1h), 15 minutes (24h), or hour (7d). Gaps are not zero latency.</Text>\n  </Stack>}\n</Stack>"
+}

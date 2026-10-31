@@ -1,0 +1,68 @@
+{
+  "$schema": "homarr-custom-widget-v2",
+  "name": "OpenWrt Firewall Explorer v0.2.6 (Exact IP / CIDR)",
+  "description": "Firewall explorer with optional exact IP and CIDR subnet filtering. No wildcards or regex.",
+  "sources": {
+    "default": {
+      "type": "http",
+      "baseUrl": "http://192.0.2.10:8788",
+      "networkScope": "private",
+      "auth": "bearer"
+    }
+  },
+  "requests": {
+    "overview": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/firewall/explorer/24",
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 60
+    },
+    "filterEvents": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/firewall/events",
+      "trigger": "manual",
+      "auth": "inherit",
+      "permission": "view",
+      "query": {
+        "hours": {
+          "$param": "hours"
+        },
+        "zone": {
+          "$param": "zone"
+        },
+        "action": {
+          "$param": "action"
+        },
+        "direction": {
+          "$param": "direction"
+        },
+        "proto": {
+          "$param": "proto"
+        },
+        "src": {
+          "$param": "sourceIp"
+        },
+        "dst": {
+          "$param": "destinationIp"
+        },
+        "port": {
+          "$param": "port"
+        },
+        "limit": {
+          "$param": "limit"
+        },
+        "offset": {
+          "$param": "offset"
+        }
+      }
+    }
+  },
+  "options": {},
+  "template": "<Stack gap=\"sm\">\n<Group justify=\"space-between\"><Text fw={700}>OpenWrt Firewall Explorer</Text><RefreshButton requestId=\"overview\" size=\"xs\" /></Group>\n<Text size=\"xs\" c=\"dimmed\">Use the filters below, then click Load filtered events. Search runs on the collector, not in the browser.</Text>\n<SimpleGrid cols={2} spacing=\"xs\">\n<Select bind=\"hours\" defaultValue=\"24\" label=\"Period\" data={[{value:\"1\",label:\"1 hour\"},{value:\"24\",label:\"24 hours\"},{value:\"168\",label:\"7 days\"},{value:\"720\",label:\"30 days\"}]} />\n<Select bind=\"zone\" defaultValue=\"\" label=\"Zone\" data={[{value:\"\",label:\"All\"},{value:\"wan\",label:\"WAN\"},{value:\"IoT\",label:\"IoT\"},{value:\"Guest\",label:\"Guest\"},{value:\"lan\",label:\"LAN\"}]} />\n<Select bind=\"action\" defaultValue=\"\" label=\"Action\" data={[{value:\"\",label:\"All\"},{value:\"DROP\",label:\"DROP\"},{value:\"REJECT\",label:\"REJECT\"},{value:\"BLOCK\",label:\"BLOCK\"}]} />\n<Select bind=\"direction\" defaultValue=\"\" label=\"Direction\" data={[{value:\"\",label:\"All\"},{value:\"INPUT\",label:\"INPUT\"},{value:\"OUTPUT\",label:\"OUTPUT\"},{value:\"FORWARD\",label:\"FORWARD\"},{value:\"INVALID_STATE\",label:\"INVALID_STATE\"}]} />\n<Select bind=\"proto\" defaultValue=\"\" label=\"Protocol\" data={[{value:\"\",label:\"All\"},{value:\"TCP\",label:\"TCP\"},{value:\"UDP\",label:\"UDP\"},{value:\"ICMP\",label:\"ICMP\"},{value:\"ICMPv6\",label:\"ICMPv6\"}]} />\n<TextInput bind=\"port\" defaultValue=\"\" label=\"Destination port\" placeholder=\"443\" />\n<TextInput bind=\"src\" defaultValue=\"\" label=\"Source IP / CIDR\" placeholder=\"192.168.1.0/24\" />\n<TextInput bind=\"dst\" defaultValue=\"\" label=\"Destination IP / CIDR\" placeholder=\"192.168.50.0/24\" />\n</SimpleGrid>\n<Select bind=\"page\" defaultValue=\"0\" label=\"Result page\" data={[{value:\"0\",label:\"Page 1\"},{value:\"30\",label:\"Page 2\"},{value:\"60\",label:\"Page 3\"},{value:\"90\",label:\"Page 4\"},{value:\"120\",label:\"Page 5\"}]} />\n<SubFetch requestId=\"filterEvents\" trigger=\"manual\" params={{hours:inputs.hours ?? \"24\",zone:inputs.zone ?? \"\",action:inputs.action ?? \"\",direction:inputs.direction ?? \"\",proto:inputs.proto ?? \"\",sourceIp:inputs.src ?? \"\",destinationIp:inputs.dst ?? \"\",port:inputs.port ?? \"\",limit:30,offset:inputs.page ?? \"0\"}}>\n{(result, meta) => (<Stack gap=\"xs\">\n<SimpleGrid cols={2} spacing=\"xs\"><Paper withBorder p=\"xs\"><Text size=\"xs\" c=\"dimmed\">Matching logged events</Text><Text fw={700} size=\"xl\">{result?.count ?? 0}</Text></Paper><Paper withBorder p=\"xs\"><Text size=\"xs\" c=\"dimmed\">Events on this page</Text><Text fw={700} size=\"xl\">{result?.events?.length ?? 0}</Text></Paper></SimpleGrid>\n{result?.timeline?.length > 0 ? <LineChart h={190} data={result.timeline} dataKey=\"time\" series={[{name:\"DROP\",color:\"red.6\"},{name:\"REJECT\",color:\"orange.6\"}]} curveType=\"linear\" withLegend withTooltip /> : <Text size=\"xs\" c=\"dimmed\">No matching events in the chosen period.</Text>}\n<Text size=\"xs\" c=\"dimmed\">Page starts at record {result?.offset ?? 0}. {result?.hasMore ? \"More matches available: select the next page.\" : \"End of results.\"}</Text>\n<Text fw={600} size=\"sm\">Matching events (newest first)</Text>\n{result?.eventSlots?.event1 ? <Paper withBorder p=\"xs\"><Group gap=\"xs\"><Badge color={result?.eventSlots?.event1.action === \"DROP\" ? \"red\" : \"orange\"}>{result?.eventSlots?.event1.action}</Badge><Badge color=\"blue\">{result?.eventSlots?.event1.zone}</Badge><Text size=\"xs\">{result?.eventSlots?.event1.direction}</Text></Group><Text size=\"xs\">{result?.eventSlots?.event1.src} → {result?.eventSlots?.event1.dst} · {result?.eventSlots?.event1.proto} / {result?.eventSlots?.event1.port || \"—\"}</Text><Text size=\"xs\" c=\"dimmed\">IN {result?.eventSlots?.event1.interfaceIn || \"—\"} · OUT {result?.eventSlots?.event1.interfaceOut || \"—\"} · {result?.eventSlots?.event1.reason}</Text></Paper> : null}\n{result?.eventSlots?.event2 ? <Paper withBorder p=\"xs\"><Group gap=\"xs\"><Badge color={result?.eventSlots?.event2.action === \"DROP\" ? \"red\" : \"orange\"}>{result?.eventSlots?.event2.action}</Badge><Badge color=\"blue\">{result?.eventSlots?.event2.zone}</Badge><Text size=\"xs\">{result?.eventSlots?.event2.direction}</Text></Group><Text size=\"xs\">{result?.eventSlots?.event2.src} → {result?.eventSlots?.event2.dst} · {result?.eventSlots?.event2.proto} / {result?.eventSlots?.event2.port || \"—\"}</Text><Text size=\"xs\" c=\"dimmed\">IN {result?.eventSlots?.event2.interfaceIn || \"—\"} · OUT {result?.eventSlots?.event2.interfaceOut || \"—\"} · {result?.eventSlots?.event2.reason}</Text></Paper> : null}\n{result?.eventSlots?.event3 ? <Paper withBorder p=\"xs\"><Group gap=\"xs\"><Badge color={result?.eventSlots?.event3.action === \"DROP\" ? \"red\" : \"orange\"}>{result?.eventSlots?.event3.action}</Badge><Badge color=\"blue\">{result?.eventSlots?.event3.zone}</Badge><Text size=\"xs\">{result?.eventSlots?.event3.direction}</Text></Group><Text size=\"xs\">{result?.eventSlots?.event3.src} → {result?.eventSlots?.event3.dst} · {result?.eventSlots?.event3.proto} / {result?.eventSlots?.event3.port || \"—\"}</Text><Text size=\"xs\" c=\"dimmed\">IN {result?.eventSlots?.event3.interfaceIn || \"—\"} · OUT {result?.eventSlots?.event3.interfaceOut || \"—\"} · {result?.eventSlots?.event3.reason}</Text></Paper> : null}\n{result?.eventSlots?.event4 ? <Paper withBorder p=\"xs\"><Group gap=\"xs\"><Badge color={result?.eventSlots?.event4.action === \"DROP\" ? \"red\" : \"orange\"}>{result?.eventSlots?.event4.action}</Badge><Badge color=\"blue\">{result?.eventSlots?.event4.zone}</Badge><Text size=\"xs\">{result?.eventSlots?.event4.direction}</Text></Group><Text size=\"xs\">{result?.eventSlots?.event4.src} → {result?.eventSlots?.event4.dst} · {result?.eventSlots?.event4.proto} / {result?.eventSlots?.event4.port || \"—\"}</Text><Text size=\"xs\" c=\"dimmed\">IN {result?.eventSlots?.event4.interfaceIn || \"—\"} · OUT {result?.eventSlots?.event4.interfaceOut || \"—\"} · {result?.eventSlots?.event4.reason}</Text></Paper> : null}\n{result?.eventSlots?.event5 ? <Paper withBorder p=\"xs\"><Group gap=\"xs\"><Badge color={result?.eventSlots?.event5.action === \"DROP\" ? \"red\" : \"orange\"}>{result?.eventSlots?.event5.action}</Badge><Badge color=\"blue\">{result?.eventSlots?.event5.zone}</Badge><Text size=\"xs\">{result?.eventSlots?.event5.direction}</Text></Group><Text size=\"xs\">{result?.eventSlots?.event5.src} → {result?.eventSlots?.event5.dst} · {result?.eventSlots?.event5.proto} / {result?.eventSlots?.event5.port || \"—\"}</Text><Text size=\"xs\" c=\"dimmed\">IN {result?.eventSlots?.event5.interfaceIn || \"—\"} · OUT {result?.eventSlots?.event5.interfaceOut || \"—\"} · {result?.eventSlots?.event5.reason}</Text></Paper> : null}\n{result?.eventSlots?.event6 ? <Paper withBorder p=\"xs\"><Group gap=\"xs\"><Badge color={result?.eventSlots?.event6.action === \"DROP\" ? \"red\" : \"orange\"}>{result?.eventSlots?.event6.action}</Badge><Badge color=\"blue\">{result?.eventSlots?.event6.zone}</Badge><Text size=\"xs\">{result?.eventSlots?.event6.direction}</Text></Group><Text size=\"xs\">{result?.eventSlots?.event6.src} → {result?.eventSlots?.event6.dst} · {result?.eventSlots?.event6.proto} / {result?.eventSlots?.event6.port || \"—\"}</Text><Text size=\"xs\" c=\"dimmed\">IN {result?.eventSlots?.event6.interfaceIn || \"—\"} · OUT {result?.eventSlots?.event6.interfaceOut || \"—\"} · {result?.eventSlots?.event6.reason}</Text></Paper> : null}\n{result?.eventSlots?.event7 ? <Paper withBorder p=\"xs\"><Group gap=\"xs\"><Badge color={result?.eventSlots?.event7.action === \"DROP\" ? \"red\" : \"orange\"}>{result?.eventSlots?.event7.action}</Badge><Badge color=\"blue\">{result?.eventSlots?.event7.zone}</Badge><Text size=\"xs\">{result?.eventSlots?.event7.direction}</Text></Group><Text size=\"xs\">{result?.eventSlots?.event7.src} → {result?.eventSlots?.event7.dst} · {result?.eventSlots?.event7.proto} / {result?.eventSlots?.event7.port || \"—\"}</Text><Text size=\"xs\" c=\"dimmed\">IN {result?.eventSlots?.event7.interfaceIn || \"—\"} · OUT {result?.eventSlots?.event7.interfaceOut || \"—\"} · {result?.eventSlots?.event7.reason}</Text></Paper> : null}\n{result?.eventSlots?.event8 ? <Paper withBorder p=\"xs\"><Group gap=\"xs\"><Badge color={result?.eventSlots?.event8.action === \"DROP\" ? \"red\" : \"orange\"}>{result?.eventSlots?.event8.action}</Badge><Badge color=\"blue\">{result?.eventSlots?.event8.zone}</Badge><Text size=\"xs\">{result?.eventSlots?.event8.direction}</Text></Group><Text size=\"xs\">{result?.eventSlots?.event8.src} → {result?.eventSlots?.event8.dst} · {result?.eventSlots?.event8.proto} / {result?.eventSlots?.event8.port || \"—\"}</Text><Text size=\"xs\" c=\"dimmed\">IN {result?.eventSlots?.event8.interfaceIn || \"—\"} · OUT {result?.eventSlots?.event8.interfaceOut || \"—\"} · {result?.eventSlots?.event8.reason}</Text></Paper> : null}\n{result?.eventSlots?.event9 ? <Paper withBorder p=\"xs\"><Group gap=\"xs\"><Badge color={result?.eventSlots?.event9.action === \"DROP\" ? \"red\" : \"orange\"}>{result?.eventSlots?.event9.action}</Badge><Badge color=\"blue\">{result?.eventSlots?.event9.zone}</Badge><Text size=\"xs\">{result?.eventSlots?.event9.direction}</Text></Group><Text size=\"xs\">{result?.eventSlots?.event9.src} → {result?.eventSlots?.event9.dst} · {result?.eventSlots?.event9.proto} / {result?.eventSlots?.event9.port || \"—\"}</Text><Text size=\"xs\" c=\"dimmed\">IN {result?.eventSlots?.event9.interfaceIn || \"—\"} · OUT {result?.eventSlots?.event9.interfaceOut || \"—\"} · {result?.eventSlots?.event9.reason}</Text></Paper> : null}\n{result?.eventSlots?.event10 ? <Paper withBorder p=\"xs\"><Group gap=\"xs\"><Badge color={result?.eventSlots?.event10.action === \"DROP\" ? \"red\" : \"orange\"}>{result?.eventSlots?.event10.action}</Badge><Badge color=\"blue\">{result?.eventSlots?.event10.zone}</Badge><Text size=\"xs\">{result?.eventSlots?.event10.direction}</Text></Group><Text size=\"xs\">{result?.eventSlots?.event10.src} → {result?.eventSlots?.event10.dst} · {result?.eventSlots?.event10.proto} / {result?.eventSlots?.event10.port || \"—\"}</Text><Text size=\"xs\" c=\"dimmed\">IN {result?.eventSlots?.event10.interfaceIn || \"—\"} · OUT {result?.eventSlots?.event10.interfaceOut || \"—\"} · {result?.eventSlots?.event10.reason}</Text></Paper> : null}\n{result?.eventSlots?.event11 ? <Paper withBorder p=\"xs\"><Group gap=\"xs\"><Badge color={result?.eventSlots?.event11.action === \"DROP\" ? \"red\" : \"orange\"}>{result?.eventSlots?.event11.action}</Badge><Badge color=\"blue\">{result?.eventSlots?.event11.zone}</Badge><Text size=\"xs\">{result?.eventSlots?.event11.direction}</Text></Group><Text size=\"xs\">{result?.eventSlots?.event11.src} → {result?.eventSlots?.event11.dst} · {result?.eventSlots?.event11.proto} / {result?.eventSlots?.event11.port || \"—\"}</Text><Text size=\"xs\" c=\"dimmed\">IN {result?.eventSlots?.event11.interfaceIn || \"—\"} · OUT {result?.eventSlots?.event11.interfaceOut || \"—\"} · {result?.eventSlots?.event11.reason}</Text></Paper> : null}\n{result?.eventSlots?.event12 ? <Paper withBorder p=\"xs\"><Group gap=\"xs\"><Badge color={result?.eventSlots?.event12.action === \"DROP\" ? \"red\" : \"orange\"}>{result?.eventSlots?.event12.action}</Badge><Badge color=\"blue\">{result?.eventSlots?.event12.zone}</Badge><Text size=\"xs\">{result?.eventSlots?.event12.direction}</Text></Group><Text size=\"xs\">{result?.eventSlots?.event12.src} → {result?.eventSlots?.event12.dst} · {result?.eventSlots?.event12.proto} / {result?.eventSlots?.event12.port || \"—\"}</Text><Text size=\"xs\" c=\"dimmed\">IN {result?.eventSlots?.event12.interfaceIn || \"—\"} · OUT {result?.eventSlots?.event12.interfaceOut || \"—\"} · {result?.eventSlots?.event12.reason}</Text></Paper> : null}\n</Stack>)}\n</SubFetch>\n<Text size=\"xs\" c=\"dimmed\">Only events logged by OpenWrt are counted; logging is rate-limited. Synthetic HOMARR-FW-TEST events are excluded. Leave IP filters empty for any address. Supports exact IP or CIDR, not * or regex.</Text>\n</Stack>"
+}

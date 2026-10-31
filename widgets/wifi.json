@@ -1,0 +1,27 @@
+{
+  "$schema": "homarr-custom-widget-v2",
+  "name": "OpenWrt Wifi Monitor",
+  "description": "Read-only OpenWrt telemetry via companion collector",
+  "sources": {
+    "default": {
+      "type": "http",
+      "baseUrl": "http://192.0.2.10:8788",
+      "networkScope": "private",
+      "auth": "bearer"
+    }
+  },
+  "requests": {
+    "snapshot": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/wifi",
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 60
+    }
+  },
+  "options": {},
+  "template": "<Stack gap=\"sm\"><Group justify=\"space-between\"><Text fw={700}>OpenWrt Wi-Fi & Clients</Text><RefreshButton requestId=\"snapshot\" size=\"xs\" /></Group>{!data.snapshot ? <Text>Waiting for data...</Text> : <Stack gap=\"xs\"><Text size=\"xs\">{data.snapshot.networks?.filter((w)=>w.up).length ?? 0} active SSIDs · {data.snapshot.clients?.length ?? 0} associated · {data.snapshot.knownDevices ?? 0} known devices</Text>{data.snapshot.networks?.map((w) => <Paper key={w.id} withBorder p=\"xs\"><Group justify=\"space-between\"><Text fw={600}>{w.ssid || w.id}</Text><Badge color={w.up ? \"green\" : \"gray\"}>{w.up ? (w.clients + \" clients\") : \"OFF\"}</Badge></Group><Text size=\"xs\" c=\"dimmed\">{w.radio} · {w.band || \"?\"} · Ch {w.channel ?? \"?\"} · {w.width || \"?\"} · {w.frequency ?? \"?\"} MHz</Text>{data.snapshot.clients?.filter((c) => c.ifname === w.ifname).map((c) => <Group key={c.mac} justify=\"space-between\"><Stack gap={0}><Text size=\"xs\">{c.mac}</Text><Text size=\"xs\" c=\"dimmed\">RSSI {c.signal ?? \"?\"} dBm · TX {c.tx_rate == null ? \"?\" : Math.round(c.tx_rate/1000)} Mbps · RX {c.rx_rate == null ? \"?\" : Math.round(c.rx_rate/1000)} Mbps</Text></Stack><Badge color={c.weak ? \"orange\" : \"green\"}>{c.weak ? \"Weak\" : \"OK\"}</Badge></Group>)}</Paper>)}<Text size=\"xs\" c=\"dimmed\">Association history is available in the collector API. First/last seen are observation times.</Text></Stack>}</Stack>"
+}

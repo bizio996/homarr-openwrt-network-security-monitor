@@ -1,0 +1,27 @@
+{
+  "$schema": "homarr-custom-widget-v2",
+  "name": "OpenWrt Network Health & Alerts v0.2.7",
+  "description": "RPC, WAN, ping loss, weak Wi-Fi and syslog status",
+  "sources": {
+    "default": {
+      "type": "http",
+      "baseUrl": "http://192.0.2.10:8788",
+      "networkScope": "private",
+      "auth": "bearer"
+    }
+  },
+  "requests": {
+    "health": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/network/health",
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 30
+    }
+  },
+  "options": {},
+  "template": "<Stack gap=\"sm\"><Group justify=\"flex-end\"><RefreshButton requestId=\"health\" size=\"xs\" /></Group>{status.health?.ok === false ? <Alert color=\"red\">API request failed. Check source and bearer token.</Alert> : null}<Group justify=\"space-between\"><Text fw={700}>Network Health & Alerts</Text><Badge color={data.health?.status === \"critical\" ? \"red\" : data.health?.status === \"warning\" ? \"yellow\" : \"green\"}>{data.health?.status ?? \"loading\"}</Badge></Group><SimpleGrid cols={2}><Paper withBorder p=\"xs\"><Text size=\"xs\" c=\"dimmed\">OpenWrt RPC</Text><Text fw={700}>{data.health?.rpcAvailable ? \"ONLINE\" : \"UNAVAILABLE\"}</Text></Paper><Paper withBorder p=\"xs\"><Text size=\"xs\" c=\"dimmed\">WAN</Text><Text fw={700}>{data.health?.wanUp === true ? \"UP\" : data.health?.wanUp === false ? \"DOWN\" : \"UNKNOWN\"}</Text></Paper><Paper withBorder p=\"xs\"><Text size=\"xs\" c=\"dimmed\">Weak Wi-Fi clients</Text><Text fw={700}>{data.health?.weakWifiClients?.length ?? 0}</Text></Paper><Paper withBorder p=\"xs\"><Text size=\"xs\" c=\"dimmed\">Alert count</Text><Text fw={700}>{data.health?.alertCount ?? 0}</Text></Paper></SimpleGrid><Text size=\"xs\" c=\"dimmed\">Last syslog timestamp: {data.health?.lastSyslogAt ?? \"none\"} (Unix seconds)</Text><Text fw={600}>Alerts</Text>{data.health?.alerts?.length ? <Text size=\"sm\">{data.health.alerts[0]?.severity}: {data.health.alerts[0]?.message}</Text> : <Text size=\"sm\" c=\"dimmed\">No current alerts</Text>}{data.health?.alerts?.length > 1 ? <Text size=\"sm\">{data.health.alerts[1]?.severity}: {data.health.alerts[1]?.message}</Text> : null}{data.health?.alerts?.length > 2 ? <Text size=\"sm\">{data.health.alerts[2]?.severity}: {data.health.alerts[2]?.message}</Text> : null}{data.health?.alerts?.length > 3 ? <Text size=\"xs\" c=\"dimmed\">Additional alerts available from /network/health</Text> : null}<Text size=\"xs\" c=\"dimmed\">Ping measured from TrueNAS; syslog silence is informational only.</Text></Stack>"
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "homarr-custom-widget-v2",
+  "name": "OpenWrt Router Monitor",
+  "description": "Read-only OpenWrt telemetry via companion collector",
+  "sources": {
+    "default": {
+      "type": "http",
+      "baseUrl": "http://192.0.2.10:8788",
+      "networkScope": "private",
+      "auth": "bearer"
+    }
+  },
+  "requests": {
+    "snapshot": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/router",
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 60
+    }
+  },
+  "options": {},
+  "template": "<Stack gap=\"sm\"><Group justify=\"space-between\"><Text fw={700}>OpenWrt Router & WAN</Text><RefreshButton requestId=\"snapshot\" size=\"xs\" /></Group>{status.snapshot?.ok === false ? <Alert color=\"red\">Collector unavailable</Alert> : !data.snapshot ? <Text>Waiting for data...</Text> : <Stack gap=\"xs\"><Text size=\"sm\">{data.snapshot.router?.model || \"Router not connected\"}</Text><Text size=\"xs\">{data.snapshot.router?.release || \"Firmware unknown\"}</Text><Badge color={data.snapshot.wan?.up ? \"green\" : \"gray\"}>{data.snapshot.wan?.up ? \"WAN UP\" : \"WAN UNKNOWN / DOWN\"}</Badge><Text size=\"sm\">Uptime: {data.snapshot.router?.uptime ?? \"N/A\"} seconds</Text><Text size=\"xs\">WAN changes: {data.snapshot.wanEvents?.length ?? 0} recorded</Text><Text size=\"xs\" c=\"dimmed\">{data.snapshot.errors?.join(\"; \") || \"No polling errors\"}</Text></Stack>}</Stack>"
+}

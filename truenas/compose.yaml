@@ -1,0 +1,27 @@
+services:
+  openwrt-collector:
+    build:
+      context: /PATH/TO/openwrt-collector
+      dockerfile: Dockerfile
+    container_name: openwrt-homarr-collector
+    restart: unless-stopped
+    env_file:
+      - /PATH/TO/openwrt-collector/.env
+    environment:
+      DB_PATH: /state/monitor.sqlite3
+      PORT: "8788"
+      TZ: Europe/Rome
+    ports:
+      - "8788:8788"
+      # Enable only after router syslog is configured and access restricted:
+      # - "5514:5514/udp"
+    volumes:
+      - /PATH/TO/openwrt-collector/state:/state
+    mem_limit: 256m
+    mem_reservation: 64m
+    memswap_limit: 256m
+    cpus: 0.50
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

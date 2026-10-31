@@ -1,0 +1,15 @@
+{
+  "homarr-monitor": {
+    "description": "Read-only monitoring calls for Homarr collector",
+    "read": {
+      "ubus": {
+        "system": ["board", "info"],
+        "network.wireless": ["status"],
+        "network.interface": ["dump"],
+        "network.interface.wan": ["status"],
+        "network.device": ["status"],
+        "iwinfo": ["devices", "info", "assoclist"]
+      }
+    }
+  }
+}

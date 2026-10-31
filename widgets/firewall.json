@@ -1,0 +1,27 @@
+{
+  "$schema": "homarr-custom-widget-v2",
+  "name": "OpenWrt Firewall Monitor",
+  "description": "Read-only OpenWrt telemetry via companion collector",
+  "sources": {
+    "default": {
+      "type": "http",
+      "baseUrl": "http://192.0.2.10:8788",
+      "networkScope": "private",
+      "auth": "bearer"
+    }
+  },
+  "requests": {
+    "snapshot": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/firewall",
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 60
+    }
+  },
+  "options": {},
+  "template": "<Stack gap=\"sm\"><Group justify=\"space-between\"><Text fw={700}>OpenWrt Firewall Events</Text><RefreshButton requestId=\"snapshot\" size=\"xs\" /></Group>{!data.snapshot ? <Text>Waiting for data...</Text> : <Stack gap=\"xs\"><Text size=\"xl\" fw={700}>{data.snapshot.events24h ?? 0} logged events / 24h</Text><Badge color={data.snapshot.syslogEnabled ? \"green\" : \"orange\"}>{data.snapshot.syslogEnabled ? \"Syslog listener enabled\" : \"Syslog listener disabled\"}</Badge><Text size=\"xs\" c=\"dimmed\">Only matching logs are counted; zero does not imply zero blocked packets.</Text><Text size=\"sm\" fw={600}>Top sources</Text>{data.snapshot.topSources?.map((s)=><Text key={s.src} size=\"xs\">{s.src}: {s.count}</Text>)}<Text size=\"sm\" fw={600}>Top blocked ports</Text>{data.snapshot.topPorts?.map((s)=><Text key={s.port} size=\"xs\">{s.port}: {s.count}</Text>)}<Text size=\"sm\" fw={600}>Recent events</Text>{data.snapshot.events?.map((e) => <Paper key={e.timestamp + e.src + e.port} withBorder p=\"xs\"><Group gap=\"xs\"><Badge color=\"orange\">{e.action}</Badge><Text size=\"xs\">{e.src || \"?\"} → {e.dst || \"?\"} · {e.proto} {e.port}</Text></Group></Paper>)}</Stack>}</Stack>"
+}
