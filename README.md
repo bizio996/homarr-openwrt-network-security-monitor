@@ -52,6 +52,11 @@ tests/            Static validation and hygiene checks
 .github/          GitHub Actions validation
 ```
 
+## Screenshots
+
+### Dashboard
+![OpenWrt Homarr Dashboard](docs/images/Dash_Homarr_Monitoring_net.png)
+
 ## Release & contribution status
 
 This is an **independent project** and is not affiliated with OpenWrt, Homarr, TrueNAS, or TIM. A separate public GitHub repository and Homarr Workshop entry have **not** been created or confirmed yet. See [CHANGELOG](CHANGELOG.md), [SECURITY](SECURITY.md), [CONTRIBUTING](CONTRIBUTING.md), and [release checklist](docs/en/RELEASE.md).
